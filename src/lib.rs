@@ -10,6 +10,7 @@ use model::{
 };
 
 use pkce;
+use rand::random;
 use reqwest::{Method, StatusCode};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -111,39 +112,48 @@ impl MALClient {
     ///
     /// #[tokio::main]
     /// async fn main() {
-    ///     let client = MALClient::new().await;
-    ///     let (url, challenge) = client.get_auth_parts();
+    ///     let redirect_uri = [YOUR_REDIRECT_URI_HERE];
+    ///     let client = MALClient::new([YOUR_SECRET_HERE]).await;
+    ///     let (url, challenge, state) = client.get_auth_parts(&redirect_uri);
     ///     println!("Go here to log in: {}", url);
-    ///     client.auth(&challenge).await.expect("Unable to log in");
+    ///     client.auth(&redirect_uri, &challenge, &state).await.expect("Unable to log in");
     ///     //Auth will open an http server on port 2561 to listen for the OAuth2 callback
     /// }
     ///```
-    pub fn get_auth_parts(&self) -> (String, String) {
+    pub fn get_auth_parts(&self, callback_url: &str) -> (String, String, String) {
         let verifier = pkce::code_verifier(128);
         let challenge = pkce::code_challenge(&verifier);
-        let url = format!("https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id={}&code_challenge={}&state=bruh", self.client_secret, challenge);
-        (url, challenge)
+        let state = format!("bruh{}", random::<u8>());
+        let url = format!("https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id={}&code_challenge={}&redirect_uri={}&state={}", self.client_secret, challenge, callback_url, state);
+        (url, challenge, state)
     }
 
     ///Listens for the OAuth2 callback from MAL on `callback_url`, which is the callback url
     ///registered when obtaining the API token from MAL. Only applications with a single registered
     ///URL are supported at the moment.
     ///
+    ///```rust
     /// #[tokio::main]
     /// async fn main() {
-    ///     let client = MALClient::new().await;
-    ///     let (url, challenge) = client.get_auth_parts();
+    ///     let redirect_uri = [YOUR_REDIRECT_URI_HERE];
+    ///     let client = MALClient::new([YOUR_SECRET_HERE]).await;
+    ///     let (url, challenge, state) = client.get_auth_parts(&redirect_uri);
     ///     println!("Go here to log in: {}", url);
-    ///     client.auth(&challenge).await.expect("Unable to log in");
+    ///     client.auth(&redirect_uri, &challenge, &state).await.expect("Unable to log in");
     ///     //Auth will open an http server on port 2561 to listen for the OAuth2 callback
     /// }
     ///```
-    pub async fn auth(&mut self, callback_url: &str, challenge: &str) -> Result<(), String> {
+    pub async fn auth(
+        &mut self,
+        callback_url: &str,
+        challenge: &str,
+        state: &str,
+    ) -> Result<(), String> {
         let mut code = "".to_owned();
 
         let server = Server::http(callback_url).unwrap();
         for i in server.incoming_requests() {
-            if !i.url().contains("state=bruh") {
+            if !i.url().contains(&format!("state={}", state)) {
                 //if the state doesn't match, discard this response
                 continue;
             }

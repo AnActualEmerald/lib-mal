@@ -17,13 +17,14 @@ use tokio;
 
 #[tokio::main]
 async fn main(){
+	let redirect = [YOUR_REDIRECT_URI_HERE];
 	//the MALClient will attempt to refresh the cached access_token, if applicable
 	let client = MALClient::new([YOUR_SECRET_HERE]).await;
-	let (auth_url, challenge) = client.get_auth_parts();
+	let (auth_url, challenge, state) = client.get_auth_parts(&redirect);
 	//the user will have to have access to a browser in order to log in and give your application permission
 	println!("Go here to log in :) -> {}", auth_url);
-	//once the user has the URL, be sure to call client.auth(&challenge) to listen for the callback and complete the OAuth2 handshake
-	client.auth(&challenge).await.expect("Unable to log in");
+	//once the user has the URL, be sure to call client.auth to listen for the callback and complete the OAuth2 handshake
+	client.auth(&redirect, &challenge, &state).await.expect("Unable to log in");
 	//once the user is authorized, the API should be usable
 	//this will get the details, including all fields, for Mobile Suit Gundam
 	let anime = client.get_anime_details(&80, None).await.expect("Couldn't get anime details");
