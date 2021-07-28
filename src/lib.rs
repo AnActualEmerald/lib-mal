@@ -31,6 +31,10 @@ pub struct MALClient {
 }
 
 impl MALClient {
+    ///Creates the client and fetches the MAL tokens from the cache if available. If `caching` is
+    ///fasle or `cache_dir` is `None` the user will have to log in at the start of every session.
+    ///
+    ///When created client will attempt to refresh the access_token if it has expired
     pub async fn new(secret: &str, caching: bool, cache_dir: Option<PathBuf>) -> Self {
         let client = reqwest::Client::new();
         let mut will_cache = caching;
@@ -99,6 +103,21 @@ impl MALClient {
         me
     }
 
+    ///Returns the auth URL and code challenge which will be needed to authorize the user
+    ///
+    ///```rust
+    /// use lib_mal::MALClient;
+    /// use tokio
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let client = MALClient::new().await;
+    ///     let (url, challenge) = client.get_auth_parts();
+    ///     println!("Go here to log in: {}", url);
+    ///     client.auth(&challenge).await.expect("Unable to log in");
+    ///     //Auth will open an http server on port 2561 to listen for the OAuth2 callback
+    /// }
+    ///```
     pub fn get_auth_parts(&self) -> (String, String) {
         let verifier = pkce::code_verifier(128);
         let challenge = pkce::code_challenge(&verifier);
@@ -106,10 +125,23 @@ impl MALClient {
         (url, challenge)
     }
 
-    pub async fn auth(&mut self, challenge: &str) -> Result<(), String> {
+    ///Listens for the OAuth2 callback from MAL on `callback_url`, which is the callback url
+    ///registered when obtaining the API token from MAL. Only applications with a single registered
+    ///URL are supported at the moment.
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let client = MALClient::new().await;
+    ///     let (url, challenge) = client.get_auth_parts();
+    ///     println!("Go here to log in: {}", url);
+    ///     client.auth(&challenge).await.expect("Unable to log in");
+    ///     //Auth will open an http server on port 2561 to listen for the OAuth2 callback
+    /// }
+    ///```
+    pub async fn auth(&mut self, callback_url: &str, challenge: &str) -> Result<(), String> {
         let mut code = "".to_owned();
 
-        let server = Server::http("localhost:2561").unwrap();
+        let server = Server::http(callback_url).unwrap();
         for i in server.incoming_requests() {
             if !i.url().contains("state=bruh") {
                 //if the state doesn't match, discard this response
