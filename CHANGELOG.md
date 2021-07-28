@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [v0.2.0]
 ### Added 
 - Improved docs for some MALClient functions
 
@@ -13,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `get_auth_parts` now generates a random state
 - `get_auth_parts` now allows for a specified redirect uri
 - `auth` now takes a state and a redirect
+
 
 ## [v0.1.0]
 ### Added
