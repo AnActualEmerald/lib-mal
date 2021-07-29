@@ -21,7 +21,7 @@ async fn main(){
 	let redirect = [YOUR_REDIRECT_URI_HERE];
 	//the MALClient will attempt to refresh the cached access_token, if applicable
 	let client = MALClient::new([YOUR_SECRET_HERE]).await;
-	let (auth_url, challenge, state) = client.get_auth_parts(&redirect);
+	let (auth_url, challenge, state) = client.get_auth_parts();
 	//the user will have to have access to a browser in order to log in and give your application permission
 	println!("Go here to log in :) -> {}", auth_url);
 	//once the user has the URL, be sure to call client.auth to listen for the callback and complete the OAuth2 handshake
