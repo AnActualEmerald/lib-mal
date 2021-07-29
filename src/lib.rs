@@ -108,6 +108,7 @@ impl MALClient {
         me
     }
 
+
     ///Returns the auth URL and code challenge which will be needed to authorize the user.
     ///
     ///# Example
@@ -164,6 +165,7 @@ impl MALClient {
         } else {
             callback_url
         };
+
 
         let server = Server::http(url).unwrap();
         for i in server.incoming_requests() {
