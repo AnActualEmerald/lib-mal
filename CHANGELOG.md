@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ## Changed
 - README example
+- Module documentation for `lib-mal`
 
 ## Fixed
 - Typo in 
