@@ -1,3 +1,5 @@
+//! TODO: Write module documentation
+
 #[cfg(test)]
 mod test;
 
@@ -9,6 +11,8 @@ use model::{
     AnimeDetails, AnimeList, ForumBoards, ForumTopics, ListStatus, TopicDetails, User,
 };
 
+use aes_gcm::aead::{Aead, NewAead};
+use aes_gcm::{Aes256Gcm, Key, Nonce};
 use pkce;
 use rand::random;
 use reqwest::{Method, StatusCode};
@@ -16,6 +20,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::Write,
+    path::Path,
     path::PathBuf,
     str,
     time::SystemTime,
@@ -40,6 +45,7 @@ impl MALClient {
         let client = reqwest::Client::new();
         let mut will_cache = caching;
         let mut n_a = false;
+
         let dir = if let Some(d) = cache_dir {
             d
         } else {
@@ -48,9 +54,9 @@ impl MALClient {
             PathBuf::new()
         };
         let mut token = String::new();
-        if will_cache && dir.join("tokens.json").exists() {
-            if let Ok(tokens) = fs::read_to_string(dir.join("tokens.json")) {
-                let mut tok: Tokens = serde_json::from_str(&tokens).unwrap();
+        if will_cache && dir.join("tokens").exists() {
+            if let Ok(tokens) = fs::read(dir.join("tokens")) {
+                let mut tok: Tokens = decrypt_tokens(&tokens).unwrap();
                 if let Ok(n) = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
                     if n.as_secs() - tok.today >= tok.expires_in as u64 {
                         let params = [
@@ -77,11 +83,8 @@ impl MALClient {
                                 .as_secs(),
                         };
 
-                        fs::write(
-                            dir.join("tokens.json"),
-                            serde_json::to_string(&tok).expect("Unable to parse token struct"),
-                        )
-                        .expect("Unable to write token file")
+                        fs::write(dir.join("tokens"), encrypt_token(tok).unwrap())
+                            .expect("Unable to write token file")
                     } else {
                         token = tok.access_token;
                     }
@@ -100,7 +103,6 @@ impl MALClient {
             client,
             caching: will_cache,
         };
-
         me
     }
 
@@ -124,7 +126,7 @@ impl MALClient {
         let verifier = pkce::code_verifier(128);
         let challenge = pkce::code_challenge(&verifier);
         let state = format!("bruh{}", random::<u8>());
-        let url = format!("https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id={}&code_challenge={}&redirect_uri={}&state={}", self.client_secret, challenge, callback_url, state);
+        let url = format!("https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id={}&code_challenge={}&state={}", self.client_secret, challenge, state);
         (url, challenge, state)
     }
 
@@ -171,11 +173,12 @@ impl MALClient {
             break;
         }
 
-        self.get_tokens(&code, &challenge).await;
+        self.get_tokens(&code, &challenge, &callback_url).await;
         Ok(())
     }
 
-    async fn get_tokens(&mut self, code: &str, verifier: &str) {
+    async fn get_tokens(&mut self, code: &str, verifier: &str, redirect: &str) {
+        let url = format!("http://{}", redirect);
         let params = [
             ("client_id", self.client_secret.as_str()),
             ("grant_type", "authorization_code"),
@@ -189,7 +192,9 @@ impl MALClient {
             .build()
             .unwrap();
         let res = self.client.execute(rec).await.unwrap();
-        let tokens: TokenResponse = serde_json::from_str(&res.text().await.unwrap()).unwrap();
+        let text = res.text().await.unwrap();
+        println!("bruh: {}", text);
+        let tokens: TokenResponse = serde_json::from_str(&text).unwrap();
         self.access_token = tokens.access_token.clone();
 
         let tjson = Tokens {
@@ -203,8 +208,8 @@ impl MALClient {
         };
         if self.caching {
             let mut f =
-                File::create(self.dirs.join("tokens.json")).expect("Unable to create token file");
-            f.write_all(serde_json::to_string(&tjson).unwrap().as_bytes())
+                File::create(self.dirs.join("tokens")).expect("Unable to create token file");
+            f.write_all(&encrypt_token(tjson).unwrap())
                 .expect("Unable to write tokens");
         }
     }
@@ -473,6 +478,26 @@ impl MALClient {
         let res = self.do_request(url).await?;
         self.parse_response(&res)
     }
+}
+
+fn encrypt_token(toks: Tokens) -> Result<Vec<u8>, ()> {
+    let key = Key::from_slice(b"one two three four five six seve");
+    let cypher = Aes256Gcm::new(&key);
+    let nonce = Nonce::from_slice(b"but the eart");
+    let plain = serde_json::to_vec(&toks).unwrap();
+    let res = cypher.encrypt(nonce, plain.as_ref()).unwrap();
+    Ok(res)
+}
+
+fn decrypt_tokens(raw: &Vec<u8>) -> Result<Tokens, ()> {
+    let key = Key::from_slice(b"one two three four five six seve");
+    let cypher = Aes256Gcm::new(&key);
+    let nonce = Nonce::from_slice(b"but the eart");
+    let plain = cypher
+        .decrypt(nonce, raw.as_ref())
+        .expect("Couldn't decrypt");
+    let text = String::from_utf8(plain).unwrap();
+    Ok(serde_json::from_str(&text).expect("couldn't parse decrypted tokens"))
 }
 
 #[derive(Deserialize, Debug)]
