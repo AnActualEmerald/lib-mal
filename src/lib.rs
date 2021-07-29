@@ -54,7 +54,7 @@ impl MALClient {
             PathBuf::new()
         };
 
-        println!("Current path exists: {}", dir.join("tokens").exists() );
+        println!("Current path exists: {}", dir.join("tokens").exists());
         let mut token = String::new();
         if will_cache && dir.join("tokens").exists() {
             if let Ok(tokens) = fs::read(dir.join("tokens")) {
@@ -110,35 +110,39 @@ impl MALClient {
 
     ///Returns the auth URL and code challenge which will be needed to authorize the user.
     ///
-    ///`callback_url` must be registered when obtaining the API token from MAL. It *must* match exactly as it appears in
-    ///the API settings page on MAL. Only HTTP URIs are supported right now. 
+    ///# Example
     ///
     ///```rust
     ///     use lib_mal::MALClient;
     ///
-    ///     let redirect_uri = "http://localhost:2525";//<-- example uri 
+    ///     let redirect_uri = "http://localhost:2525";//<-- example uri
     ///     let client = MALClient::new([YOUR_SECRET_HERE]).await;
-    ///     let (url, challenge, state) = client.get_auth_parts(&redirect_uri);
+    ///     let (url, challenge, state) = client.get_auth_parts();
     ///     println!("Go here to log in: {}", url);
     ///     client.auth(&redirect_uri, &challenge, &state).await.expect("Unable to log in");
     /// }
     ///```
-    pub fn get_auth_parts(&self, callback_url: &str) -> (String, String, String) {
+    pub fn get_auth_parts(&self) -> (String, String, String) {
         let verifier = pkce::code_verifier(128);
         let challenge = pkce::code_challenge(&verifier);
         let state = format!("bruh{}", random::<u8>());
-        let url = format!("https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id={}&code_challenge={}&state={}&redirect_uri={}", self.client_secret, challenge, state, callback_url);
+        let url = format!("https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id={}&code_challenge={}&state={}", self.client_secret, challenge, state, );
         (url, challenge, state)
     }
 
-    ///Listens for the OAuth2 callback from MAL on `callback_url`, which is the redirect_uri 
-    ///registered when obtaining the API token from MAL. It *must* match exactly as it appears in
-    ///the API settings page on MAL. Only HTTP URIs are supported right now. 
+    ///Listens for the OAuth2 callback from MAL on `callback_url`, which is the redirect_uri
+    ///registered when obtaining the API token from MAL. Only HTTP URIs are supported right now.
+    ///
+    ///For now only applications with a single registered URI are supported, having more than one
+    ///seems to cause issues with the MAL api itself
+    ///
+    ///# Example
     ///
     ///```rust
     ///     use lib_mal::MALClient;
     ///
-    ///     let redirect_uri = "http://localhost:2525";//<-- example uri 
+    ///     let redirect_uri = "localhost:2525";//<-- example uri,
+    ///     //appears as "http://localhost:2525" in the API settings
     ///     let client = MALClient::new([YOUR_SECRET_HERE]).await;
     ///     let (url, challenge, state) = client.get_auth_parts(&redirect_uri);
     ///     println!("Go here to log in: {}", url);
@@ -154,8 +158,10 @@ impl MALClient {
         let mut code = "".to_owned();
         let url = if callback_url.contains("http") {
             //server won't work if the url has the protocol in it
-           callback_url.trim_start_matches("http://").trim_start_matches("https://") 
-        }else {
+            callback_url
+                .trim_start_matches("http://")
+                .trim_start_matches("https://")
+        } else {
             callback_url
         };
 
@@ -179,16 +185,14 @@ impl MALClient {
             break;
         }
 
-        self.get_tokens(&code, &challenge, &callback_url).await;
-        Ok(())
+        self.get_tokens(&code, &challenge).await
     }
 
-    async fn get_tokens(&mut self, code: &str, verifier: &str, redirect: &str) {
+    async fn get_tokens(&mut self, code: &str, verifier: &str) -> Result<(), String> {
         let params = [
             ("client_id", self.client_secret.as_str()),
             ("grant_type", "authorization_code"),
             ("code_verifier", verifier),
-            ("redirect_uri", redirect),
             ("code", code),
         ];
         let rec = self
@@ -199,23 +203,27 @@ impl MALClient {
             .unwrap();
         let res = self.client.execute(rec).await.unwrap();
         let text = res.text().await.unwrap();
-        let tokens: TokenResponse = serde_json::from_str(&text).unwrap();
-        self.access_token = tokens.access_token.clone();
+        if let Ok(tokens) = serde_json::from_str::<TokenResponse>(&text) {
+            self.access_token = tokens.access_token.clone();
 
-        let tjson = Tokens {
-            access_token: tokens.access_token,
-            refresh_token: tokens.refresh_token,
-            expires_in: tokens.expires_in,
-            today: SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_secs(),
-        };
-        if self.caching {
-            let mut f =
-                File::create(self.dirs.join("tokens")).expect("Unable to create token file");
-            f.write_all(&encrypt_token(tjson).unwrap())
-                .expect("Unable to write tokens");
+            let tjson = Tokens {
+                access_token: tokens.access_token,
+                refresh_token: tokens.refresh_token,
+                expires_in: tokens.expires_in,
+                today: SystemTime::now()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs(),
+            };
+            if self.caching {
+                let mut f =
+                    File::create(self.dirs.join("tokens")).expect("Unable to create token file");
+                f.write_all(&encrypt_token(tjson).unwrap())
+                    .expect("Unable to write tokens");
+            }
+            Ok(())
+        }else {
+            Err(text) 
         }
     }
 

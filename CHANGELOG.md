@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Local token encryption
 
+## Changed
+- `get_auth_parts` no longer takes a redirect uri
+
+## Fixed
+- Auth failing for "invalid_client", seems to be an issue on MAL's side when the parameter `redirect_uri` is present. Only applications with one URI registered with the API are supported unless this issue is resolved.
+
 ## [v0.2.0]
 ### Added 
 - Improved docs for some MALClient functions
