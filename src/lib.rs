@@ -53,6 +53,8 @@ impl MALClient {
             will_cache = false;
             PathBuf::new()
         };
+
+        println!("Current path exists: {}", dir.join("tokens").exists() );
         let mut token = String::new();
         if will_cache && dir.join("tokens").exists() {
             if let Ok(tokens) = fs::read(dir.join("tokens")) {
@@ -91,7 +93,7 @@ impl MALClient {
                 }
             }
         } else {
-            will_cache = false;
+            will_cache = caching;
             n_a = true;
         }
 
@@ -106,43 +108,41 @@ impl MALClient {
         me
     }
 
-    ///Returns the auth URL and code challenge which will be needed to authorize the user
+    ///Returns the auth URL and code challenge which will be needed to authorize the user.
+    ///
+    ///`callback_url` must be registered when obtaining the API token from MAL. It *must* match exactly as it appears in
+    ///the API settings page on MAL. Only HTTP URIs are supported right now. 
     ///
     ///```rust
-    /// use lib_mal::MALClient;
-    /// use tokio
+    ///     use lib_mal::MALClient;
     ///
-    /// #[tokio::main]
-    /// async fn main() {
-    ///     let redirect_uri = [YOUR_REDIRECT_URI_HERE];
+    ///     let redirect_uri = "http://localhost:2525";//<-- example uri 
     ///     let client = MALClient::new([YOUR_SECRET_HERE]).await;
     ///     let (url, challenge, state) = client.get_auth_parts(&redirect_uri);
     ///     println!("Go here to log in: {}", url);
     ///     client.auth(&redirect_uri, &challenge, &state).await.expect("Unable to log in");
-    ///     //Auth will open an http server on port 2561 to listen for the OAuth2 callback
     /// }
     ///```
     pub fn get_auth_parts(&self, callback_url: &str) -> (String, String, String) {
         let verifier = pkce::code_verifier(128);
         let challenge = pkce::code_challenge(&verifier);
         let state = format!("bruh{}", random::<u8>());
-        let url = format!("https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id={}&code_challenge={}&state={}", self.client_secret, challenge, state);
+        let url = format!("https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id={}&code_challenge={}&state={}&redirect_uri={}", self.client_secret, challenge, state, callback_url);
         (url, challenge, state)
     }
 
-    ///Listens for the OAuth2 callback from MAL on `callback_url`, which is the callback url
-    ///registered when obtaining the API token from MAL. Only applications with a single registered
-    ///URL are supported at the moment.
+    ///Listens for the OAuth2 callback from MAL on `callback_url`, which is the redirect_uri 
+    ///registered when obtaining the API token from MAL. It *must* match exactly as it appears in
+    ///the API settings page on MAL. Only HTTP URIs are supported right now. 
     ///
     ///```rust
-    /// #[tokio::main]
-    /// async fn main() {
-    ///     let redirect_uri = [YOUR_REDIRECT_URI_HERE];
+    ///     use lib_mal::MALClient;
+    ///
+    ///     let redirect_uri = "http://localhost:2525";//<-- example uri 
     ///     let client = MALClient::new([YOUR_SECRET_HERE]).await;
     ///     let (url, challenge, state) = client.get_auth_parts(&redirect_uri);
     ///     println!("Go here to log in: {}", url);
     ///     client.auth(&redirect_uri, &challenge, &state).await.expect("Unable to log in");
-    ///     //Auth will open an http server on port 2561 to listen for the OAuth2 callback
     /// }
     ///```
     pub async fn auth(
@@ -152,8 +152,14 @@ impl MALClient {
         state: &str,
     ) -> Result<(), String> {
         let mut code = "".to_owned();
+        let url = if callback_url.contains("http") {
+            //server won't work if the url has the protocol in it
+           callback_url.trim_start_matches("http://").trim_start_matches("https://") 
+        }else {
+            callback_url
+        };
 
-        let server = Server::http(callback_url).unwrap();
+        let server = Server::http(url).unwrap();
         for i in server.incoming_requests() {
             if !i.url().contains(&format!("state={}", state)) {
                 //if the state doesn't match, discard this response
@@ -178,11 +184,11 @@ impl MALClient {
     }
 
     async fn get_tokens(&mut self, code: &str, verifier: &str, redirect: &str) {
-        let url = format!("http://{}", redirect);
         let params = [
             ("client_id", self.client_secret.as_str()),
             ("grant_type", "authorization_code"),
             ("code_verifier", verifier),
+            ("redirect_uri", redirect),
             ("code", code),
         ];
         let rec = self
@@ -193,7 +199,6 @@ impl MALClient {
             .unwrap();
         let res = self.client.execute(rec).await.unwrap();
         let text = res.text().await.unwrap();
-        println!("bruh: {}", text);
         let tokens: TokenResponse = serde_json::from_str(&text).unwrap();
         self.access_token = tokens.access_token.clone();
 
