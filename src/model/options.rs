@@ -13,9 +13,9 @@ pub enum RankingType {
     Favorite,
 }
 
-impl RankingType {
-    pub fn to_string(&self) -> String {
-        match self {
+impl Display for RankingType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let me = match self {
             Self::Favorite => "favorite".to_owned(),
             Self::TV => "tv".to_owned(),
             Self::Airing => "airing".to_owned(),
@@ -25,13 +25,8 @@ impl RankingType {
             Self::Movie => "movie".to_owned(),
             Self::OVA => "ova".to_owned(),
             Self::All => "all".to_owned(),
-        }
-    }
-}
-
-impl Display for RankingType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        };
+        write!(f, "{}", me)
     }
 }
 
@@ -43,20 +38,15 @@ pub enum Season {
     Fall,
 }
 
-impl Season {
-    pub fn to_string(&self) -> String {
-        match self {
+impl Display for Season {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let me = match self {
             Self::Winter => "winter".to_owned(),
             Self::Spring => "spring".to_owned(),
             Self::Summer => "summer".to_owned(),
             Self::Fall => "fall".to_owned(),
-        }
-    }
-}
-
-impl Display for Season {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        };
+        write!(f, "{}", me)
     }
 }
 
@@ -69,15 +59,16 @@ pub enum Status {
     PlanToWatch,
 }
 
-impl Status {
-    pub fn to_string(&self) -> String {
-        match self {
+impl Display for Status {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let me = match self {
             Self::Watching => "watching".to_owned(),
             Self::Completed => "completed".to_owned(),
             Self::OnHold => "on_hold".to_owned(),
             Self::Dropped => "dropped".to_owned(),
             Self::PlanToWatch => "plan_to_watch".to_owned(),
-        }
+        };
+        write!(f, "{}", me)
     }
 }
 
@@ -100,7 +91,7 @@ pub struct StatusUpdate {
 
 // This is long and ugly but I don't know how else to do it
 impl StatusUpdate {
-    pub fn new() -> Self {
+    pub fn default() -> Self {
         StatusUpdate {
             status: None,
             is_rewatching: None,
@@ -173,7 +164,7 @@ impl Params for StatusUpdate {
             params.push(("tags", t.join(",")));
         }
         if let Some(t) = self.comments {
-            params.push(("comments", t.to_string()));
+            params.push(("comments", t));
         }
 
         params

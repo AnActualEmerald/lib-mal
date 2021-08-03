@@ -1,4 +1,28 @@
-//! TODO: Write module documentation
+//! ## Quick Start
+//! To use `lib-mal` you will need an API key from [MyAnimeList.net](https://myanimelist.net), and a callback URL. An example of how to use `lib-mal` might look like this:
+//!
+//! ```rust
+//! use lib_mal::MALClient;
+//! use tokio; //Can be whatever async executor you prefer
+//!
+//!
+//! #[tokio::main]
+//! async fn main(){
+//!     //this has to exactly match a URI that's been registered with the MAL api
+//!     let redirect = [YOUR_REDIRECT_URI_HERE];
+//!     //the MALClient will attempt to refresh the cached access_token, if applicable
+//!     let client = MALClient::new([YOUR_SECRET_HERE]).await;
+//!     let (auth_url, challenge, state) = client.get_auth_parts();
+//!     //the user will have to have access to a browser in order to log in and give your application permission
+//!     println!("Go here to log in :) -> {}", auth_url);
+//!     //once the user has the URL, be sure to call client.auth to listen for the callback and complete the OAuth2 handshake
+//!     client.auth(&redirect, &challenge, &state).await.expect("Unable to log in");
+//!     //once the user is authorized, the API should be usable
+//!     //this will get the details, including all fields, for Mobile Suit Gundam
+//!     let anime = client.get_anime_details(80, None).await.expect("Couldn't get anime details");
+//!     //because so many fields are optional, a lot of the members of lib_mal::model::AnimeDetails are `Option`s
+//!     println!("{}: started airing on {}, ended on {}, ranked #{}", anime.show.title, anime.start_date.ok(), anime.end_date.ok(), anime.rank.ok());
+//!}
 
 #[cfg(test)]
 mod test;
@@ -13,7 +37,6 @@ use model::{
 
 use aes_gcm::aead::{Aead, NewAead};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
-use pkce;
 use rand::random;
 use reqwest::{Method, StatusCode};
 use serde::{Deserialize, Serialize};
@@ -27,6 +50,26 @@ use std::{
 };
 use tiny_http::{Response, Server};
 
+///Exposes all of the API functions for the [MyAnimeList API](https://myanimelist.net/apiconfig/references/api/v2)
+///
+///**With the exception of all the manga-related funcitons which haven't been implemented yet**
+///
+///# Example
+///```rust
+/// use lib_mal::MALClient;
+/// # async fn main() {
+/// let client = MALClient::new([YOUR_SECRET_HERE]).await;
+/// //--do authorization stuff before accessing the funcitons--//
+///
+/// //Gets the details with all fields for Mobile Suit Gundam
+/// let anime = client.get_anime_details(80, None).await.expect("Couldn't get anime details");
+/// //You should actually handle the potential error
+/// println!("Title: {} | Started airing: {} | Finished airing: {}",
+///     anime.show.title,
+///     anime.start_date.unwrap(),
+///     anime.end_date.unwrap());
+/// # }
+///```
 pub struct MALClient {
     client_secret: String,
     dirs: PathBuf,
@@ -53,6 +96,8 @@ impl MALClient {
             will_cache = false;
             PathBuf::new()
         };
+
+        println!("Current path exists: {}", dir.join("tokens").exists());
         let mut token = String::new();
         if will_cache && dir.join("tokens").exists() {
             if let Ok(tokens) = fs::read(dir.join("tokens")) {
@@ -91,59 +136,60 @@ impl MALClient {
                 }
             }
         } else {
-            will_cache = false;
+            will_cache = caching;
             n_a = true;
         }
 
-        let me = MALClient {
+        MALClient {
             client_secret: secret.to_owned(),
             dirs: dir,
             need_auth: n_a,
             access_token: token,
             client,
             caching: will_cache,
-        };
-        me
+        }
     }
 
-    ///Returns the auth URL and code challenge which will be needed to authorize the user
+    ///Returns the auth URL and code challenge which will be needed to authorize the user.
+    ///
+    ///# Example
     ///
     ///```rust
-    /// use lib_mal::MALClient;
-    /// use tokio
+    ///     use lib_mal::MALClient;
     ///
-    /// #[tokio::main]
-    /// async fn main() {
-    ///     let redirect_uri = [YOUR_REDIRECT_URI_HERE];
+    ///     let redirect_uri = "http://localhost:2525";//<-- example uri
     ///     let client = MALClient::new([YOUR_SECRET_HERE]).await;
-    ///     let (url, challenge, state) = client.get_auth_parts(&redirect_uri);
+    ///     let (url, challenge, state) = client.get_auth_parts();
     ///     println!("Go here to log in: {}", url);
     ///     client.auth(&redirect_uri, &challenge, &state).await.expect("Unable to log in");
-    ///     //Auth will open an http server on port 2561 to listen for the OAuth2 callback
-    /// }
+    ///
     ///```
-    pub fn get_auth_parts(&self, callback_url: &str) -> (String, String, String) {
+    pub fn get_auth_parts(&self) -> (String, String, String) {
         let verifier = pkce::code_verifier(128);
         let challenge = pkce::code_challenge(&verifier);
         let state = format!("bruh{}", random::<u8>());
-        let url = format!("https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id={}&code_challenge={}&state={}", self.client_secret, challenge, state);
+        let url = format!("https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id={}&code_challenge={}&state={}", self.client_secret, challenge, state, );
         (url, challenge, state)
     }
 
-    ///Listens for the OAuth2 callback from MAL on `callback_url`, which is the callback url
-    ///registered when obtaining the API token from MAL. Only applications with a single registered
-    ///URL are supported at the moment.
+    ///Listens for the OAuth2 callback from MAL on `callback_url`, which is the redirect_uri
+    ///registered when obtaining the API token from MAL. Only HTTP URIs are supported right now.
+    ///
+    ///For now only applications with a single registered URI are supported, having more than one
+    ///seems to cause issues with the MAL api itself
+    ///
+    ///# Example
     ///
     ///```rust
-    /// #[tokio::main]
-    /// async fn main() {
-    ///     let redirect_uri = [YOUR_REDIRECT_URI_HERE];
+    ///     use lib_mal::MALClient;
+    ///
+    ///     let redirect_uri = "localhost:2525";//<-- example uri,
+    ///     //appears as "http://localhost:2525" in the API settings
     ///     let client = MALClient::new([YOUR_SECRET_HERE]).await;
     ///     let (url, challenge, state) = client.get_auth_parts(&redirect_uri);
     ///     println!("Go here to log in: {}", url);
     ///     client.auth(&redirect_uri, &challenge, &state).await.expect("Unable to log in");
-    ///     //Auth will open an http server on port 2561 to listen for the OAuth2 callback
-    /// }
+    ///
     ///```
     pub async fn auth(
         &mut self,
@@ -152,8 +198,16 @@ impl MALClient {
         state: &str,
     ) -> Result<(), String> {
         let mut code = "".to_owned();
+        let url = if callback_url.contains("http") {
+            //server won't work if the url has the protocol in it
+            callback_url
+                .trim_start_matches("http://")
+                .trim_start_matches("https://")
+        } else {
+            callback_url
+        };
 
-        let server = Server::http(callback_url).unwrap();
+        let server = Server::http(url).unwrap();
         for i in server.incoming_requests() {
             if !i.url().contains(&format!("state={}", state)) {
                 //if the state doesn't match, discard this response
@@ -173,12 +227,10 @@ impl MALClient {
             break;
         }
 
-        self.get_tokens(&code, &challenge, &callback_url).await;
-        Ok(())
+        self.get_tokens(&code, &challenge).await
     }
 
-    async fn get_tokens(&mut self, code: &str, verifier: &str, redirect: &str) {
-        let url = format!("http://{}", redirect);
+    async fn get_tokens(&mut self, code: &str, verifier: &str) -> Result<(), String> {
         let params = [
             ("client_id", self.client_secret.as_str()),
             ("grant_type", "authorization_code"),
@@ -193,24 +245,27 @@ impl MALClient {
             .unwrap();
         let res = self.client.execute(rec).await.unwrap();
         let text = res.text().await.unwrap();
-        println!("bruh: {}", text);
-        let tokens: TokenResponse = serde_json::from_str(&text).unwrap();
-        self.access_token = tokens.access_token.clone();
+        if let Ok(tokens) = serde_json::from_str::<TokenResponse>(&text) {
+            self.access_token = tokens.access_token.clone();
 
-        let tjson = Tokens {
-            access_token: tokens.access_token,
-            refresh_token: tokens.refresh_token,
-            expires_in: tokens.expires_in,
-            today: SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_secs(),
-        };
-        if self.caching {
-            let mut f =
-                File::create(self.dirs.join("tokens")).expect("Unable to create token file");
-            f.write_all(&encrypt_token(tjson).unwrap())
-                .expect("Unable to write tokens");
+            let tjson = Tokens {
+                access_token: tokens.access_token,
+                refresh_token: tokens.refresh_token,
+                expires_in: tokens.expires_in,
+                today: SystemTime::now()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs(),
+            };
+            if self.caching {
+                let mut f =
+                    File::create(self.dirs.join("tokens")).expect("Unable to create token file");
+                f.write_all(&encrypt_token(tjson).unwrap())
+                    .expect("Unable to write tokens");
+            }
+            Ok(())
+        } else {
+            Err(text)
         }
     }
 
@@ -284,7 +339,7 @@ impl MALClient {
     ///Returns all fields when supplied `None`
     pub async fn get_anime_details(
         &self,
-        id: &u32,
+        id: u32,
         fields: Option<Vec<AnimeField>>,
     ) -> Result<AnimeDetails, String> {
         let url = if let Some(f) = fields {
@@ -445,16 +500,16 @@ impl MALClient {
         let params = {
             let mut tmp = vec![];
             if let Some(bid) = board_id {
-                tmp.push(format!("board_id={}", bid.to_string()));
+                tmp.push(format!("board_id={}", bid));
             }
             if let Some(bid) = subboard_id {
-                tmp.push(format!("subboard_id={}", bid.to_string()));
+                tmp.push(format!("subboard_id={}", bid));
             }
             if let Some(bid) = query {
-                tmp.push(format!("q={}", bid.to_string()));
+                tmp.push(format!("q={}", bid));
             }
             if let Some(bid) = topic_user_name {
-                tmp.push(format!("topic_user_name={}", bid.to_string()));
+                tmp.push(format!("topic_user_name={}", bid));
             }
             if let Some(bid) = user_name {
                 tmp.push(format!("user_name={}", bid));
@@ -489,7 +544,7 @@ fn encrypt_token(toks: Tokens) -> Result<Vec<u8>, ()> {
     Ok(res)
 }
 
-fn decrypt_tokens(raw: &Vec<u8>) -> Result<Tokens, ()> {
+fn decrypt_tokens(raw: &[u8]) -> Result<Tokens, ()> {
     let key = Key::from_slice(b"one two three four five six seve");
     let cypher = Aes256Gcm::new(&key);
     let nonce = Nonce::from_slice(b"but the eart");

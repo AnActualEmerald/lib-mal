@@ -36,9 +36,9 @@ pub enum AnimeField {
     ALL,
 }
 
-impl AnimeField {
-    pub fn to_string(&self) -> String {
-        match self {
+impl Display for AnimeField {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let me = match self {
     Self::ID => "id".to_owned(),
     Self::Title => "title".to_owned(),
     Self::MainPicture => "main_picture".to_owned(),
@@ -72,12 +72,7 @@ impl AnimeField {
     Self::Studios => "studios".to_owned(),
     Self::Statistics => "statistics".to_owned(),
     Self::ALL => "id,title,main_picture,alternative_titles,start_date,end_date,synopsis,mean,rank,popularity,num_list_users,num_scoring_users,nsfw,created_at,updated_at,media_type,status,genres,my_list_status,num_episodes,start_season,broadcast,source,average_episode_duration,rating,pictures,background,related_anime,related_manga,recommendations,studios,statistics".to_owned(),
-        }
-    }
-}
-
-impl Display for AnimeField {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        };
+        write!(f, "{}", me)
     }
 }
