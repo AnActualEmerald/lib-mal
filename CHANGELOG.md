@@ -7,14 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## Changed
+## [v0.3.1]
+
+### Changed
 
 -   README example
 -   Module documentation for `lib-mal`
 
-## Fixed
+### Fixed
 
--   Typo in
+-   A println that was accidentally left in
 
 ## [v0.3.0]
 

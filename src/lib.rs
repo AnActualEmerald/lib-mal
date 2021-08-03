@@ -97,7 +97,6 @@ impl MALClient {
             PathBuf::new()
         };
 
-        println!("Current path exists: {}", dir.join("tokens").exists());
         let mut token = String::new();
         if will_cache && dir.join("tokens").exists() {
             if let Ok(tokens) = fs::read(dir.join("tokens")) {
