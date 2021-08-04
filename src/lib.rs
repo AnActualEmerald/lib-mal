@@ -30,7 +30,7 @@ mod test;
 pub mod model;
 
 use model::{
-    fields::AnimeField,
+    fields::AnimeFields,
     options::{Params, RankingType, Season},
     AnimeDetails, AnimeList, ForumBoards, ForumTopics, ListStatus, TopicDetails, User,
 };
@@ -338,22 +338,15 @@ impl MALClient {
     pub async fn get_anime_details(
         &self,
         id: u32,
-        fields: Option<Vec<AnimeField>>,
+        fields: Option<AnimeFields>,
     ) -> Result<AnimeDetails, String> {
         let url = if let Some(f) = fields {
-            format!(
-                "https://api.myanimelist.net/v2/anime/{}?fields={}",
-                id,
-                f.iter()
-                    .map(|v| v.to_string())
-                    .collect::<Vec<String>>()
-                    .join(",")
-            )
+            format!("https://api.myanimelist.net/v2/anime/{}?fields={}", id, f)
         } else {
             format!(
                 "https://api.myanimelist.net/v2/anime/{}?fields={}",
                 id,
-                AnimeField::ALL
+                AnimeFields::ALL
             )
         };
         match self
