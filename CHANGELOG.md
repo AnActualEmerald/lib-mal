@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Available fields for API functions are now represented using bitflags (Thanks dblanovschi)
 - Functions now return a `MALError` struct rather than plain strings when returning an error
 
+### Removed
+
+- `MALClient::get_my_user_info` no longer takes a fields argument as it seems there's only one field option
+
 ## [v0.3.2]
 
 ### Fixed
