@@ -30,10 +30,13 @@ async fn main(){
 	client.auth(&redirect, &challenge, &state).await.expect("Unable to log in");
 	//once the user is authorized, the API should be usable
 	//this will get the details, including all fields, for Mobile Suit Gundam
-	let anime = client.get_anime_details(&80, None).await.expect("Couldn't get anime details");
+	let anime = client.get_anime_details(80, None).await.expect("Couldn't get anime details");
 	//because so many fields are optional, a lot of the members of lib_mal::model::AnimeDetails are `Option`s
-	println!("{}: started airing on {}, ended on {}, ranked #{}", anime.show.title, anime.start_date.ok(), anime.end_date.ok(), anime.rank.ok());
+	println!("{}: started airing on {}, ended on {}, ranked #{}", anime.show.title, anime.start_date.unwrap(), anime.end_date.unwrap(), anime.rank.unwrap());
 
 }
 
 ```
+
+
+You can join my [discord](https://dicord.gg/nrvRnkVmJm) or check out my [twitter](https://twitter.com/KevahnGee/)
