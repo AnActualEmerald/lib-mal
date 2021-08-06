@@ -345,12 +345,12 @@ impl MALClient {
     /// let res = client.get_anime_details(80, AnimeFields::Rank | AnimeFields::Mean | AnimeFields::Studios);
     ///```
     ///
-    pub async fn get_anime_details(
+    pub async fn get_anime_details<T: Into<Option<AnimeFields>>>(
         &self,
         id: u32,
-        fields: Option<AnimeFields>,
+        fields: T,
     ) -> Result<AnimeDetails, String> {
-        let url = if let Some(f) = fields {
+        let url = if let Some(f) = fields.into() {
             format!("https://api.myanimelist.net/v2/anime/{}?fields={}", id, f)
         } else {
             format!(
