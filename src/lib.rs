@@ -342,7 +342,7 @@ impl MALClient {
     /// use lib_mal::model::fields::AnimeFields;
     ///
     /// //returns an AnimeDetails struct with just the Rank, Mean, and Studio data for Mobile Suit Gundam
-    /// let res = client.get_anime_details(80, Some(AnimeFields::Rank | AnimeFields::Mean | AnimeFields::Studios));
+    /// let res = client.get_anime_details(80, AnimeFields::Rank | AnimeFields::Mean | AnimeFields::Studios);
     ///```
     ///
     pub async fn get_anime_details(
