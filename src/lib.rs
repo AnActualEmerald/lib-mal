@@ -21,7 +21,7 @@
 //!     //this will get the details, including all fields, for Mobile Suit Gundam
 //!     let anime = client.get_anime_details(80, None).await.expect("Couldn't get anime details");
 //!     //because so many fields are optional, a lot of the members of lib_mal::model::AnimeDetails are `Option`s
-//!     println!("{}: started airing on {}, ended on {}, ranked #{}", anime.show.title, anime.start_date.ok(), anime.end_date.ok(), anime.rank.ok());
+//!     println!("{}: started airing on {}, ended on {}, ranked #{}", anime.show.title, anime.start_date.unwrap(), anime.end_date.unwrap(), anime.rank.unwrap());
 //!}
 
 #[cfg(test)]
@@ -335,6 +335,16 @@ impl MALClient {
     ///Only returns the fields specified in the `fields` parameter
     ///
     ///Returns all fields when supplied `None`
+    ///
+    ///# Example
+    ///
+    ///```rust
+    /// use lib_mal::model::fields::AnimeFields;
+    ///
+    /// //returns an AnimeDetails struct with just the Rank, Mean, and Studio data for Mobile Suit Gundam
+    /// let res = client.get_anime_details(80, Some(AnimeFields::Rank | AnimeFields::Mean | AnimeFields::Studios));
+    ///```
+    ///
     pub async fn get_anime_details(
         &self,
         id: u32,
@@ -412,6 +422,7 @@ impl MALClient {
 
     ///Adds an anime to the list, or updates the element if it already exists
     pub async fn update_user_anime_status<T: Params>(
+        //this doesn't have to be generic
         &self,
         id: u32,
         update: T,
@@ -517,6 +528,8 @@ impl MALClient {
     ///
     ///`fields` defaults to `anime_statistics` if `None`
     pub async fn get_my_user_info(&self, fields: Option<&str>) -> Result<User, String> {
+        //TODO: Figure out if there are even any other available fields, implement bitflags for
+        //them if needed
         let url = format!(
             "https://api.myanimelist.net/v2/users/@me?fields={}",
             fields.unwrap_or("anime_statistics")
