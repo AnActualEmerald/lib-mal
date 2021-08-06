@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
+#[allow(non_upper_case_globals)]
 pub mod fields;
 pub mod options;
 

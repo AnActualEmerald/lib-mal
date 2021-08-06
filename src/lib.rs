@@ -309,9 +309,7 @@ impl MALClient {
     ) -> Result<T, MALError> {
         match serde_json::from_str::<T>(res) {
             Ok(v) => Ok(v),
-            Err(e) => 
-                Err(MALError::new("Unable to parse response", &format!("{}", e)))
-            
+            Err(e) => Err(MALError::new("Unable to parse response", &format!("{}", e))),
         }
     }
 
@@ -455,7 +453,10 @@ impl MALClient {
         match res {
             Ok(r) => {
                 if r.status() == StatusCode::NOT_FOUND {
-                    Err(MALError::new(&format!("Anime {} not found", id), r.status().as_str()))
+                    Err(MALError::new(
+                        &format!("Anime {} not found", id),
+                        r.status().as_str(),
+                    ))
                 } else {
                     Ok(())
                 }
@@ -525,16 +526,9 @@ impl MALClient {
     }
 
     ///Gets the details for the current user
-    ///
-    ///`fields` defaults to `anime_statistics` if `None`
-    pub async fn get_my_user_info(&self, fields: Option<&str>) -> Result<User, MALError> {
-        //TODO: Figure out if there are even any other available fields, implement bitflags for
-        //them if needed
-        let url = format!(
-            "https://api.myanimelist.net/v2/users/@me?fields={}",
-            fields.unwrap_or("anime_statistics")
-        );
-        let res = self.do_request(url).await?;
+    pub async fn get_my_user_info(&self) -> Result<User, MALError> {
+        let url = "https://api.myanimelist.net/v2/users/@me?fields=anime_statistics";
+        let res = self.do_request(url.to_owned()).await?;
         self.parse_response(&res)
     }
 }
@@ -552,12 +546,15 @@ fn decrypt_tokens(raw: &[u8]) -> Result<Tokens, MALError> {
     let key = Key::from_slice(b"one two three four five six seve");
     let cypher = Aes256Gcm::new(key);
     let nonce = Nonce::from_slice(b"but the eart");
-    match cypher.decrypt(nonce, raw.as_ref()){
-       Ok(plain) => {
+    match cypher.decrypt(nonce, raw.as_ref()) {
+        Ok(plain) => {
             let text = String::from_utf8(plain).unwrap();
             Ok(serde_json::from_str(&text).expect("couldn't parse decrypted tokens"))
-       },
-       Err(e) => Err(MALError::new("Unable to decrypt encrypted tokens", &format!("{}", e)))
+        }
+        Err(e) => Err(MALError::new(
+            "Unable to decrypt encrypted tokens",
+            &format!("{}", e),
+        )),
     }
 }
 
@@ -593,7 +590,7 @@ impl MALError {
     pub fn new(msg: &str, error: &str) -> Self {
         MALError {
             error: error.to_owned(),
-            message: msg.to_owned()
+            message: msg.to_owned(),
         }
     }
 }
