@@ -41,6 +41,7 @@ use rand::random;
 use reqwest::{Method, StatusCode};
 use serde::{Deserialize, Serialize};
 use std::{
+    fmt::Display,
     fs::{self, File},
     io::Write,
     path::PathBuf,
@@ -126,7 +127,7 @@ impl MALClient {
                                 .as_secs(),
                         };
 
-                        fs::write(dir.join("tokens"), encrypt_token(tok).unwrap())
+                        fs::write(dir.join("tokens"), encrypt_token(tok))
                             .expect("Unable to write token file")
                     } else {
                         token = tok.access_token;
@@ -258,7 +259,7 @@ impl MALClient {
             if self.caching {
                 let mut f =
                     File::create(self.dirs.join("tokens")).expect("Unable to create token file");
-                f.write_all(&encrypt_token(tjson).unwrap())
+                f.write_all(&encrypt_token(tjson))
                     .expect("Unable to write tokens");
             }
             Ok(())
@@ -268,7 +269,7 @@ impl MALClient {
     }
 
     ///Sends a get request to the specified URL with the appropriate auth header
-    async fn do_request(&self, url: String) -> Result<String, String> {
+    async fn do_request(&self, url: String) -> Result<String, MALError> {
         match self
             .client
             .get(url)
@@ -277,7 +278,7 @@ impl MALClient {
             .await
         {
             Ok(res) => Ok(res.text().await.unwrap()),
-            Err(e) => Err(format!("{}", e)),
+            Err(e) => Err(MALError::new("Unable to send request", &format!("{}", e))),
         }
     }
 
@@ -287,7 +288,7 @@ impl MALClient {
         &self,
         url: String,
         params: Vec<(&str, String)>,
-    ) -> Result<String, String> {
+    ) -> Result<String, MALError> {
         match self
             .client
             .put(url)
@@ -297,7 +298,7 @@ impl MALClient {
             .await
         {
             Ok(res) => Ok(res.text().await.unwrap()),
-            Err(e) => Err(format!("{}", e)),
+            Err(e) => Err(MALError::new("Unable to send request", &format!("{}", e))),
         }
     }
 
@@ -305,11 +306,18 @@ impl MALClient {
     fn parse_response<'a, T: Serialize + Deserialize<'a>>(
         &self,
         res: &'a str,
-    ) -> Result<T, String> {
+    ) -> Result<T, MALError> {
         match serde_json::from_str::<T>(res) {
             Ok(v) => Ok(v),
-            Err(e) => Err(format!("{}", e)),
+            Err(e) => 
+                Err(MALError::new("Unable to parse response", &format!("{}", e)))
+            
         }
+    }
+
+    ///Returns the current access token. Intended mostly for debugging.
+    pub fn get_access_token(&self) -> &str {
+        &self.access_token
     }
 
     //Begin API functions
@@ -321,7 +329,7 @@ impl MALClient {
         &self,
         query: &str,
         limit: Option<u8>,
-    ) -> Result<AnimeList, String> {
+    ) -> Result<AnimeList, MALError> {
         let url = format!(
             "https://api.myanimelist.net/v2/anime?q={}&limit={}",
             query,
@@ -349,7 +357,7 @@ impl MALClient {
         &self,
         id: u32,
         fields: T,
-    ) -> Result<AnimeDetails, String> {
+    ) -> Result<AnimeDetails, MALError> {
         let url = if let Some(f) = fields.into() {
             format!("https://api.myanimelist.net/v2/anime/{}?fields={}", id, f)
         } else {
@@ -359,16 +367,8 @@ impl MALClient {
                 AnimeFields::ALL
             )
         };
-        match self
-            .client
-            .get(url)
-            .bearer_auth(&self.access_token)
-            .send()
-            .await
-        {
-            Ok(res) => Ok(serde_json::from_str(&res.text().await.unwrap()).unwrap()),
-            Err(e) => Err(format!("{}", e)),
-        }
+        let res = self.do_request(url).await?;
+        self.parse_response(&res)
     }
 
     ///Gets a list of anime ranked by `RankingType`
@@ -378,7 +378,7 @@ impl MALClient {
         &self,
         ranking_type: RankingType,
         limit: Option<u8>,
-    ) -> Result<AnimeList, String> {
+    ) -> Result<AnimeList, MALError> {
         let url = format!(
             "https://api.myanimelist.net/v2/anime/ranking?ranking_type={}&limit={}",
             ranking_type,
@@ -396,7 +396,7 @@ impl MALClient {
         season: Season,
         year: u32,
         limit: Option<u8>,
-    ) -> Result<AnimeList, String> {
+    ) -> Result<AnimeList, MALError> {
         let url = format!(
             "https://api.myanimelist.net/v2/anime/season/{}/{}?limit={}",
             year,
@@ -409,7 +409,7 @@ impl MALClient {
 
     ///Returns the suggested anime for the current user. Can return an empty list if the user has
     ///no suggestions.
-    pub async fn get_suggested_anime(&self, limit: Option<u8>) -> Result<AnimeList, String> {
+    pub async fn get_suggested_anime(&self, limit: Option<u8>) -> Result<AnimeList, MALError> {
         let url = format!(
             "https://api.myanimelist.net/v2/anime/suggestions?limit={}",
             limit.unwrap_or(100)
@@ -426,7 +426,7 @@ impl MALClient {
         &self,
         id: u32,
         update: T,
-    ) -> Result<ListStatus, String> {
+    ) -> Result<ListStatus, MALError> {
         let params = update.get_params();
         let url = format!("https://api.myanimelist.net/v2/anime/{}/my_list_status", id);
         let res = self.do_request_forms(url, params).await?;
@@ -434,17 +434,17 @@ impl MALClient {
     }
 
     ///Returns the user's full anime list as an `AnimeList` struct.
-    pub async fn get_user_anime_list(&self) -> Result<AnimeList, String> {
+    pub async fn get_user_anime_list(&self) -> Result<AnimeList, MALError> {
         let url = "https://api.myanimelist.net/v2/users/@me/animelist?fields=list_status&limit=4";
         let res = self.do_request(url.to_owned()).await?;
 
-        Ok(serde_json::from_str(&res).unwrap())
+        self.parse_response(&res)
     }
 
     ///Deletes the anime with `id` from the user's anime list
     ///
     ///Returns 404 if the id isn't in the list.
-    pub async fn delete_anime_list_item(&self, id: u32) -> Result<(), String> {
+    pub async fn delete_anime_list_item(&self, id: u32) -> Result<(), MALError> {
         let url = format!("https://api.myanimelist.net/v2/anime/{}/my_list_status", id);
         let res = self
             .client
@@ -455,19 +455,19 @@ impl MALClient {
         match res {
             Ok(r) => {
                 if r.status() == StatusCode::NOT_FOUND {
-                    Err(format!("Anime {} not found", id))
+                    Err(MALError::new(&format!("Anime {} not found", id), r.status().as_str()))
                 } else {
                     Ok(())
                 }
             }
-            Err(e) => Err(format!("{}", e)),
+            Err(e) => Err(MALError::new("Unable to send request", &format!("{}", e))),
         }
     }
 
     //--Forum functions--//
 
     ///Returns a vector of `HashMap`s that represent all the forum boards on MAL
-    pub async fn get_forum_boards(&self) -> Result<ForumBoards, String> {
+    pub async fn get_forum_boards(&self) -> Result<ForumBoards, MALError> {
         let res = self
             .do_request("https://api.myanimelist.net/v2/forum/boards".to_owned())
             .await?;
@@ -479,7 +479,7 @@ impl MALClient {
         &self,
         topic_id: u32,
         limit: Option<u8>,
-    ) -> Result<TopicDetails, String> {
+    ) -> Result<TopicDetails, MALError> {
         let url = format!(
             "https://api.myanimelist.net/v2/forum/topic/{}?limit={}",
             topic_id,
@@ -498,7 +498,7 @@ impl MALClient {
         topic_user_name: Option<String>,
         user_name: Option<String>,
         limit: Option<u32>,
-    ) -> Result<ForumTopics, String> {
+    ) -> Result<ForumTopics, MALError> {
         let params = {
             let mut tmp = vec![];
             if let Some(bid) = board_id {
@@ -527,7 +527,7 @@ impl MALClient {
     ///Gets the details for the current user
     ///
     ///`fields` defaults to `anime_statistics` if `None`
-    pub async fn get_my_user_info(&self, fields: Option<&str>) -> Result<User, String> {
+    pub async fn get_my_user_info(&self, fields: Option<&str>) -> Result<User, MALError> {
         //TODO: Figure out if there are even any other available fields, implement bitflags for
         //them if needed
         let url = format!(
@@ -539,24 +539,26 @@ impl MALClient {
     }
 }
 
-fn encrypt_token(toks: Tokens) -> Result<Vec<u8>, ()> {
+fn encrypt_token(toks: Tokens) -> Vec<u8> {
     let key = Key::from_slice(b"one two three four five six seve");
     let cypher = Aes256Gcm::new(key);
     let nonce = Nonce::from_slice(b"but the eart");
     let plain = serde_json::to_vec(&toks).unwrap();
     let res = cypher.encrypt(nonce, plain.as_ref()).unwrap();
-    Ok(res)
+    res
 }
 
-fn decrypt_tokens(raw: &[u8]) -> Result<Tokens, ()> {
+fn decrypt_tokens(raw: &[u8]) -> Result<Tokens, MALError> {
     let key = Key::from_slice(b"one two three four five six seve");
     let cypher = Aes256Gcm::new(key);
     let nonce = Nonce::from_slice(b"but the eart");
-    let plain = cypher
-        .decrypt(nonce, raw.as_ref())
-        .expect("Couldn't decrypt");
-    let text = String::from_utf8(plain).unwrap();
-    Ok(serde_json::from_str(&text).expect("couldn't parse decrypted tokens"))
+    match cypher.decrypt(nonce, raw.as_ref()){
+       Ok(plain) => {
+            let text = String::from_utf8(plain).unwrap();
+            Ok(serde_json::from_str(&text).expect("couldn't parse decrypted tokens"))
+       },
+       Err(e) => Err(MALError::new("Unable to decrypt encrypted tokens", &format!("{}", e)))
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -576,7 +578,22 @@ struct Tokens {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct APIError {
+pub struct MALError {
     pub error: String,
     pub message: String,
+}
+
+impl Display for MALError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Error: {} Message: {}", self.error, self.message)
+    }
+}
+
+impl MALError {
+    pub fn new(msg: &str, error: &str) -> Self {
+        MALError {
+            error: error.to_owned(),
+            message: msg.to_owned()
+        }
+    }
 }
