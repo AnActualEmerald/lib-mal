@@ -39,4 +39,4 @@ async fn main(){
 ```
 
 
-You can join my [discord](https://dicord.gg/nrvRnkVmJm) or check out my [twitter](https://twitter.com/KevahnGee/)
+You can join my [discord](https://discord.gg/nrvRnkVmJm) or check out my [twitter](https://twitter.com/KevahnGee/)
