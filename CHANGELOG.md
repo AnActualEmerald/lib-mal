@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+-	Documentation for bitflags usage
+
+### Changed
+
+-	Available fields for API functions are now represented using bitflags (Thanks dblanovschi)
+
 ## [v0.3.2]
 
 ### Fixed
