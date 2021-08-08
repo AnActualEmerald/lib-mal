@@ -7,15 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [v0.4.0]
+
 ### Added
 
 - Documentation for bitflags usage
 - `get_access_token` method for `MALClient`
+- Tests for basic anime list functions
+- Doc tests to ensure working documentation
+- Method to create an `MALClient` with just an access token
 
 ### Changed
 
 - Available fields for API functions are now represented using bitflags (Thanks dblanovschi)
 - Functions now return a `MALError` struct rather than plain strings when returning an error
+- `MALClient::new` to `MALClient::init`
 
 ### Removed
 
