@@ -2,50 +2,58 @@
   "data": [
     {
       "node": {
-        "id": 35111,
-        "title": "Haikyuu!! Movie 4: Concept no Tatakai",
+        "id": 36275,
+        "title": "Natsume Yuujinchou Roku Specials",
         "main_picture": {
-          "medium": "https://myanimelist.cdn-dena.com/images/anime/3/86346.jpg",
-          "large": "https://myanimelist.cdn-dena.com/images/anime/3/86346l.jpg"
+          "medium": "https://api-cdn.myanimelist.net/images/anime/10/87615.jpg",
+          "large": "https://api-cdn.myanimelist.net/images/anime/10/87615l.jpg"
         }
-      }
+      },
+      "list_status": null,
+      "ranking": null
     },
     {
       "node": {
-        "id": 35110,
-        "title": "Haikyuu!! Movie 3: Sainou to Sense",
+        "id": 35247,
+        "title": "Owarimonogatari 2nd Season",
         "main_picture": {
-          "medium": "https://myanimelist.cdn-dena.com/images/anime/3/86069.jpg",
-          "large": "https://myanimelist.cdn-dena.com/images/anime/3/86069l.jpg"
+          "medium": "https://api-cdn.myanimelist.net/images/anime/6/87322.jpg",
+          "large": "https://api-cdn.myanimelist.net/images/anime/6/87322l.jpg"
         }
-      }
+      },
+      "list_status": null,
+      "ranking": null
     },
     {
       "node": {
         "id": 33486,
         "title": "Boku no Hero Academia 2nd Season",
         "main_picture": {
-          "medium": "https://myanimelist.cdn-dena.com/images/anime/12/85221.jpg",
-          "large": "https://myanimelist.cdn-dena.com/images/anime/12/85221l.jpg"
+          "large": "https://api-cdn.myanimelist.net/images/anime/12/85221l.jpg",
+          "medium": "https://api-cdn.myanimelist.net/images/anime/12/85221.jpg"
         }
-      }
+      },
+      "list_status": null,
+      "ranking": null
     },
     {
       "node": {
-        "id": 34914,
-        "title": "New Game!!",
+        "id": 35082,
+        "title": "Hibike! Euphonium Movie 2: Todoketai Melody",
         "main_picture": {
-          "medium": "https://myanimelist.cdn-dena.com/images/anime/4/86790.jpg",
-          "large": "https://myanimelist.cdn-dena.com/images/anime/4/86790l.jpg"
+          "large": "https://api-cdn.myanimelist.net/images/anime/5/88024l.jpg",
+          "medium": "https://api-cdn.myanimelist.net/images/anime/5/88024.jpg"
         }
-      }
+      },
+      "list_status": null,
+      "ranking": null
     }
   ],
   "paging": {
     "next": "https://api.myanimelist.net/v2/anime/season/2017/summer?offset=4&limit=4"
   },
   "season": {
-    "year": 2017,
-    "season": "summer"
+    "season": "summer",
+    "year": 2017
   }
 }
