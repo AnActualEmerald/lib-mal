@@ -1,4 +1,4 @@
-# lib-mal [![Rust](https://github.com/AnActualEmerald/lib-mal/actions/workflows/rust.yml/badge.svg)](https://github.com/AnActualEmerald/lib-mal/actions/workflows/rust.yml)
+# lib-mal [![Rust](https://github.com/AnActualEmerald/lib-mal/actions/workflows/rust.yml/badge.svg)](https://github.com/AnActualEmerald/lib-mal/actions/workflows/rust.yml) ![Docs](https://docs.rs/lib-mal/badge.svg)
 
 A library for interacting with the MyAnimeList API
 
