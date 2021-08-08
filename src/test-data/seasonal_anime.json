@@ -1,0 +1,51 @@
+{
+  "data": [
+    {
+      "node": {
+        "id": 35111,
+        "title": "Haikyuu!! Movie 4: Concept no Tatakai",
+        "main_picture": {
+          "medium": "https://myanimelist.cdn-dena.com/images/anime/3/86346.jpg",
+          "large": "https://myanimelist.cdn-dena.com/images/anime/3/86346l.jpg"
+        }
+      }
+    },
+    {
+      "node": {
+        "id": 35110,
+        "title": "Haikyuu!! Movie 3: Sainou to Sense",
+        "main_picture": {
+          "medium": "https://myanimelist.cdn-dena.com/images/anime/3/86069.jpg",
+          "large": "https://myanimelist.cdn-dena.com/images/anime/3/86069l.jpg"
+        }
+      }
+    },
+    {
+      "node": {
+        "id": 33486,
+        "title": "Boku no Hero Academia 2nd Season",
+        "main_picture": {
+          "medium": "https://myanimelist.cdn-dena.com/images/anime/12/85221.jpg",
+          "large": "https://myanimelist.cdn-dena.com/images/anime/12/85221l.jpg"
+        }
+      }
+    },
+    {
+      "node": {
+        "id": 34914,
+        "title": "New Game!!",
+        "main_picture": {
+          "medium": "https://myanimelist.cdn-dena.com/images/anime/4/86790.jpg",
+          "large": "https://myanimelist.cdn-dena.com/images/anime/4/86790l.jpg"
+        }
+      }
+    }
+  ],
+  "paging": {
+    "next": "https://api.myanimelist.net/v2/anime/season/2017/summer?offset=4&limit=4"
+  },
+  "season": {
+    "year": 2017,
+    "season": "summer"
+  }
+}

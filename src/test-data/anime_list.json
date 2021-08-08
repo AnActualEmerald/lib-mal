@@ -1,0 +1,37 @@
+{
+  "data": [
+    {
+      "node": {
+        "id": 21,
+        "title": "One Piece",
+        "main_picture": {
+          "medium": "https://myanimelist.cdn-dena.com/images/anime/6/73245.jpg",
+          "large": "https://myanimelist.cdn-dena.com/images/anime/6/73245l.jpg"
+        }
+      }
+    },
+    {
+      "node": {
+        "id": 5040,
+        "title": "One Outs",
+        "main_picture": {
+          "medium": "https://myanimelist.cdn-dena.com/images/anime/13/22669.jpg",
+          "large": "https://myanimelist.cdn-dena.com/images/anime/13/22669l.jpg"
+        }
+      }
+    },
+    {
+      "node": {
+        "id": 459,
+        "title": "One Piece Movie 1",
+        "main_picture": {
+          "medium": "https://myanimelist.cdn-dena.com/images/anime/5/20925.jpg",
+          "large": "https://myanimelist.cdn-dena.com/images/anime/5/20925l.jpg"
+        }
+      }
+    }
+  ],
+  "paging": {
+    "next": "https://api.myanimelist.net/v2/anime?offset=4&q=one&limit=4"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "data": [
+    {
+      "node": {
+        "id": 5114,
+        "title": "Fullmetal Alchemist: Brotherhood",
+        "main_picture": {
+          "medium": "https://myanimelist.cdn-dena.com/images/anime/5/47421.jpg",
+          "large": "https://myanimelist.cdn-dena.com/images/anime/5/47421l.jpg"
+        }
+      },
+      "ranking": {
+        "rank": 1
+      }
+    },
+    {
+      "node": {
+        "id": 32281,
+        "title": "Kimi no Na wa.",
+        "main_picture": {
+          "medium": "https://myanimelist.cdn-dena.com/images/anime/5/87048.jpg",
+          "large": "https://myanimelist.cdn-dena.com/images/anime/5/87048l.jpg"
+        }
+      },
+      "ranking": {
+        "rank": 2
+      }
+    },
+    {
+      "node": {
+        "id": 30484,
+        "title": "Steins;Gate 0",
+        "main_picture": {
+          "medium": "https://myanimelist.cdn-dena.com/images/anime/1031/90444.jpg",
+          "large": "https://myanimelist.cdn-dena.com/images/anime/1031/90444l.jpg"
+        }
+      },
+      "ranking": {
+        "rank": 3
+      }
+    },
+    {
+      "node": {
+        "id": 28977,
+        "title": "Gintama°",
+        "main_picture": {
+          "medium": "https://myanimelist.cdn-dena.com/images/anime/3/72078.jpg",
+          "large": "https://myanimelist.cdn-dena.com/images/anime/3/72078l.jpg"
+        }
+      },
+      "ranking": {
+        "rank": 4
+      }
+    }
+  ],
+  "paging": {
+    "next": "https://api.myanimelist.net/v2/anime/ranking?offset=4&ranking_type=all&limit=4"
+  }
+}
