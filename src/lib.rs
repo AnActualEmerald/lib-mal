@@ -84,7 +84,7 @@ impl MALClient {
     ///false or `cache_dir` is `None` the user will have to log in at the start of every session.
     ///
     ///When created client will attempt to refresh the access_token if it has expired
-    pub async fn new(secret: &str, caching: bool, cache_dir: Option<PathBuf>) -> Self {
+    pub async fn init(secret: &str, caching: bool, cache_dir: Option<PathBuf>) -> Self {
         let client = reqwest::Client::new();
         let mut will_cache = caching;
         let mut n_a = false;
@@ -147,6 +147,28 @@ impl MALClient {
             client,
             caching: will_cache,
         }
+    }
+
+    ///Creates a client using provided token. Caching is disable by default.
+    pub fn with_access_token(token: &str, client_secret: &str) -> Self {
+        MALClient {
+            client_secret: client_secret.to_owned(),
+            need_auth: false,
+            dirs: PathBuf::new(),
+            access_token: token.to_owned(),
+            client: reqwest::Client::new(),
+            caching: false,
+        }
+    }
+
+    ///Sets the directory the client will use for the token cache
+    pub fn set_cache_dir(&mut self, dir: PathBuf) {
+        self.dirs = dir;
+    }
+
+    ///Sets wether the client will cache or not
+    pub fn set_caching(&mut self, caching: bool) {
+        self.caching = caching;
     }
 
     ///Returns the auth URL and code challenge which will be needed to authorize the user.
