@@ -4,9 +4,9 @@
 //! ```no_run
 //! use lib_mal::MALClient;
 //! use std::path::PathBuf;
-//! # use lib_mal::MALError;
+//! use lib_mal::MALError;
 //!
-//! # async fn test() -> Result<(), MALError>{
+//!  async fn test() -> Result<(), MALError>{
 //!     //this has to exactly match a URI that's been registered with the MAL api
 //!     let redirect = "[YOUR_REDIRECT_URI_HERE]";
 //!     //the MALClient will attempt to refresh the cached access_token, if applicable
@@ -21,8 +21,8 @@
 //!     let anime = client.get_anime_details(80, None).await?;
 //!     //because so many fields are optional, a lot of the members of lib_mal::model::AnimeDetails are `Option`s
 //!     println!("{}: started airing on {}, ended on {}, ranked #{}", anime.show.title, anime.start_date.unwrap(), anime.end_date.unwrap(), anime.rank.unwrap());
-//!     # Ok(())
-//!# }
+//!     Ok(())
+//!}
 
 #[cfg(test)]
 mod test;
@@ -361,6 +361,17 @@ impl MALClient {
     }
 
     ///Returns the current access token. Intended mostly for debugging.
+    ///
+    ///# Example
+    ///
+    ///```no_run
+    /// # use lib_mal::MALClient;
+    /// # use std::path::PathBuf;
+    /// # async fn test() {
+    ///     let client = MALClient::init("[YOUR_SECRET_HERE]", true, Some(PathBuf::new())).await;
+    ///     let token = client.get_access_token();
+    /// # }
+    ///```
     pub fn get_access_token(&self) -> &str {
         &self.access_token
     }
@@ -370,6 +381,18 @@ impl MALClient {
     //--Anime functions--//
     ///Gets a list of anime based on the query string provided
     ///`limit` defaults to 100 if `None`
+    ///
+    ///# Example
+    ///
+    ///```no_run
+    /// # use lib_mal::MALClient;
+    /// # use lib_mal::MALError;
+    /// # async fn test() -> Result<(), MALError> {
+    ///     # let client = MALClient::init("[YOUR_SECRET_HERE]", false, None).await;
+    ///     let list = client.get_anime_list("Mobile Suit Gundam", None).await?;
+    ///     # Ok(())
+    /// # }
+    ///```
     pub async fn get_anime_list(
         &self,
         query: &str,
@@ -424,6 +447,20 @@ impl MALClient {
     ///Gets a list of anime ranked by `RankingType`
     ///
     ///`limit` defaults to the max of 100 when `None`
+    ///
+    ///# Example 
+    ///
+    ///```no_run
+    /// # use lib_mal::{MALError, MALClient};
+    /// use lib_mal::model::options::RankingType;
+    /// # async fn test() -> Result<(), MALError> {
+    /// # let client = MALClient::init("[YOUR_SECRET_HERE]", false, None).await;
+    /// // Gets a list of the top 5 most popular anime
+    /// let ranking_list = client.get_anime_ranking(RankingType::ByPopularity, Some(5)).await?;
+    /// # Ok(())
+    /// # }
+    ///
+    ///```
     pub async fn get_anime_ranking(
         &self,
         ranking_type: RankingType,
