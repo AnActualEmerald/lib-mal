@@ -34,7 +34,6 @@ use model::{
     options::{Params, RankingType, Season},
     AnimeDetails, AnimeList, ForumBoards, ForumTopics, ListStatus, TopicDetails, User,
 };
-
 use aes_gcm::aead::{Aead, NewAead};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
 use rand::random;
@@ -456,7 +455,7 @@ impl MALClient {
     /// # async fn test() -> Result<(), MALError> {
     /// # let client = MALClient::init("[YOUR_SECRET_HERE]", false, None).await;
     /// // Gets a list of the top 5 most popular anime
-    /// let ranking_list = client.get_anime_ranking(RankingType::ByPopularity, Some(5)).await?;
+    /// let ranking_list = client.get_anime_ranking(RankingType::ByPopularity, 5).await?;
     /// # Ok(())
     /// # }
     ///
@@ -516,6 +515,7 @@ impl MALClient {
     /// # async fn test() -> Result<(), MALError> {
     ///     # let client = MALClient::init("", false, None).await;
     ///     let suggestions = client.get_suggested_anime(10).await?;
+    ///     # Ok(())
     /// # }
     ///```
     pub async fn get_suggested_anime(&self, limit: impl Into<Option<u8>>) -> Result<AnimeList, MALError> {
@@ -530,11 +530,29 @@ impl MALClient {
     //--User anime list functions--//
 
     ///Adds an anime to the list, or updates the element if it already exists
-    pub async fn update_user_anime_status<T: Params>(
-        //this doesn't have to be generic
+    ///
+    ///# Example
+    ///
+    ///```no_run
+    /// # use lib_mal::{MALClient, MALError};
+    /// use lib_mal::model::StatusBuilder;
+    /// use lib_mal::model::options::Status;
+    /// # async fn test() -> Result<(), MALError> {
+    ///     # let client = MALClient::init("", false, None).await;
+    ///     // add a new anime to the user's list 
+    ///     let updated_status = client.update_user_anime_status(80, StatusBuilder::new().status(Status::Watching).build()).await?;
+    ///     // or update an existing one
+    ///     let new_status = StatusBuilder::new().status(Status::Dropped).num_watched_episodes(2).build();
+    ///     let updated_status = client.update_user_anime_status(32981, new_status).await?;
+    ///
+    ///     # Ok(())
+    ///
+    /// # }
+    ///```
+    pub async fn update_user_anime_status(
         &self,
         id: u32,
-        update: T,
+        update: model::options::StatusUpdate,
     ) -> Result<ListStatus, MALError> {
         let params = update.get_params();
         let url = format!("https://api.myanimelist.net/v2/anime/{}/my_list_status", id);
@@ -543,6 +561,18 @@ impl MALClient {
     }
 
     ///Returns the user's full anime list as an `AnimeList` struct.
+    ///
+    ///# Example
+    ///
+    ///```no_run
+    /// # use lib_mal::{MALClient, MALError};
+    /// # async fn test() -> Result<(), MALError> {
+    ///     # let client = MALClient::init("", false, None).await;
+    ///     let my_list = client.get_user_anime_list().await?;
+    ///     # Ok(())
+    ///
+    /// # }
+    ///```
     pub async fn get_user_anime_list(&self) -> Result<AnimeList, MALError> {
         let url = "https://api.myanimelist.net/v2/users/@me/animelist?fields=list_status&limit=4";
         let res = self.do_request(url.to_owned()).await?;
@@ -552,7 +582,21 @@ impl MALClient {
 
     ///Deletes the anime with `id` from the user's anime list
     ///
-    ///Returns 404 if the id isn't in the list.
+    ///# Note
+    /// The [API docs from MAL](https://myanimelist.net/apiconfig/references/api/v2#operation/anime_anime_id_my_list_status_delete) say this method should return 404 if the anime isn't in the user's
+    /// list, but in my testing this wasn't true. Without that there's no way to tell if the item
+    /// was actually deleted or not
+    ///
+    ///# Example
+    ///
+    ///```no_run
+    /// # use lib_mal::{MALClient, MALError};
+    /// # async fn test() -> Result<(), MALError> {
+    ///     # let client = MALClient::init("", false, None).await;
+    ///     client.delete_anime_list_item(80).await?;
+    ///     # Ok(())
+    /// # }
+    ///```
     pub async fn delete_anime_list_item(&self, id: u32) -> Result<(), MALError> {
         let url = format!("https://api.myanimelist.net/v2/anime/{}/my_list_status", id);
         let res = self
@@ -563,6 +607,7 @@ impl MALClient {
             .await;
         match res {
             Ok(r) => {
+                println!("{:?}", r.status());
                 if r.status() == StatusCode::NOT_FOUND {
                     Err(MALError::new(
                         &format!("Anime {} not found", id),
@@ -642,6 +687,17 @@ impl MALClient {
     }
 
     ///Gets the details for the current user
+    ///
+    ///# Example 
+    ///
+    ///```no_run
+    /// # use lib_mal::{MALClient, MALError};
+    /// # async fn test() -> Result<(), MALError> {
+    ///     # let client = MALClient::init("", false, None).await;
+    ///     let me = client.get_my_user_info().await?;
+    ///     # Ok(())
+    /// # }
+    ///```
     pub async fn get_my_user_info(&self) -> Result<User, MALError> {
         let url = "https://api.myanimelist.net/v2/users/@me?fields=anime_statistics";
         let res = self.do_request(url.to_owned()).await?;
