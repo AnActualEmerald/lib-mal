@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Examples for API functions
+- `StatusBuilder` to make constructing `StatusUpdate`s easier
+
+### Changed
+
+- All functions that take `Option`s now take `impl Into<Option>`
+
+
 
 ## [v0.4.0]
 
