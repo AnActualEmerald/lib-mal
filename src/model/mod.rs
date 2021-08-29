@@ -6,6 +6,8 @@ use std::collections::HashMap;
 pub mod fields;
 pub mod options;
 
+pub use options::StatusBuilder;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AnimeList {
     pub data: Vec<ListNode>,

@@ -105,6 +105,10 @@ impl StatusUpdate {
         }
     }
 
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn status(&mut self, status: Status) {
         self.status = Some(status);
     }
@@ -168,5 +172,92 @@ impl Params for StatusUpdate {
         }
 
         params
+    }
+}
+
+pub struct StatusBuilder {
+    status: Option<Status>,
+    is_rewatching: Option<bool>,
+    score: Option<u8>,
+    num_watched_episodes: Option<u32>,
+    priority: Option<u8>,
+    num_times_rewatched: Option<u32>,
+    rewatch_value: Option<u8>,
+    tags: Option<Vec<String>>,
+    comments: Option<String>,
+}
+
+impl StatusBuilder {
+    pub fn new() -> Self {
+        StatusBuilder {
+            status: None,
+            is_rewatching: None,
+            score: None,
+            num_watched_episodes: None,
+            priority: None,
+            num_times_rewatched: None,
+            rewatch_value: None,
+            tags: None,
+            comments: None,
+        }
+    }
+
+    pub fn status(mut self, status: impl Into<Option<Status>>) -> Self {
+        self.status = status.into();
+        self
+    }
+
+    pub fn is_rewatching(mut self, is_rewatching: impl Into<Option<bool>>) -> Self {
+        self.is_rewatching = is_rewatching.into();
+        self
+    }
+
+    pub fn score(mut self, score: impl Into<Option<u8>>) -> Self {
+        self.score = score.into();
+        self
+    }
+
+    pub fn num_watched_episodes(mut self, num_watched_episodes: impl Into<Option<u32>>) -> Self {
+        self.num_watched_episodes = num_watched_episodes.into();
+        self
+    }
+
+    pub fn priority(mut self, priority: impl Into<Option<u8>>) -> Self {
+        self.priority = priority.into();
+        self
+    }
+
+    pub fn num_times_rewatched(mut self, num_times_rewatched: impl Into<Option<u32>>) -> Self {
+        self.num_times_rewatched = num_times_rewatched.into();
+        self
+    }
+
+    pub fn rewatch_value(mut self, rewatch_value: impl Into<Option<u8>>) -> Self {
+        self.rewatch_value = rewatch_value.into();
+        self
+    }
+
+    pub fn tags(mut self, tags: impl Into<Option<Vec<String>>>) -> Self {
+        self.tags = tags.into();
+        self
+    }
+
+    pub fn comments(mut self, comments: impl Into<Option<String>>) -> Self {
+        self.comments = comments.into();
+        self
+    }
+
+    pub fn build(self) -> StatusUpdate {
+        StatusUpdate {
+            status: self.status,
+            is_rewatching: self.is_rewatching,
+            score: self.score,
+            num_watched_episodes: self.num_watched_episodes,
+            priority: self.priority,
+            num_times_rewatched: self.num_times_rewatched,
+            rewatch_value: self.rewatch_value,
+            tags: self.tags,
+            comments: self.comments,
+        }
     }
 }
