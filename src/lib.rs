@@ -396,12 +396,12 @@ impl MALClient {
     pub async fn get_anime_list(
         &self,
         query: &str,
-        limit: Option<u8>,
+        limit: impl Into<Option<u8>>,
     ) -> Result<AnimeList, MALError> {
         let url = format!(
             "https://api.myanimelist.net/v2/anime?q={}&limit={}",
             query,
-            limit.unwrap_or(100)
+            limit.into().unwrap_or(100)
         );
         let res = self.do_request(url).await?;
         self.parse_response(&res)
@@ -426,10 +426,10 @@ impl MALClient {
     ///
     ///```
     ///
-    pub async fn get_anime_details<T: Into<Option<AnimeFields>>>(
+    pub async fn get_anime_details(
         &self,
         id: u32,
-        fields: T,
+        fields: impl Into<Option<AnimeFields>>,
     ) -> Result<AnimeDetails, MALError> {
         let url = if let Some(f) = fields.into() {
             format!("https://api.myanimelist.net/v2/anime/{}?fields={}", id, f)
@@ -464,12 +464,12 @@ impl MALClient {
     pub async fn get_anime_ranking(
         &self,
         ranking_type: RankingType,
-        limit: Option<u8>,
+        limit: impl Into<Option<u8>>,
     ) -> Result<AnimeList, MALError> {
         let url = format!(
             "https://api.myanimelist.net/v2/anime/ranking?ranking_type={}&limit={}",
             ranking_type,
-            limit.unwrap_or(100)
+            limit.into().unwrap_or(100)
         );
         let res = self.do_request(url).await?;
         Ok(serde_json::from_str(&res).unwrap())
@@ -478,17 +478,29 @@ impl MALClient {
     ///Gets the anime for a given season in a given year
     ///
     ///`limit` defaults to the max of 100 when `None`
+    ///
+    ///# Example
+    ///
+    ///```no_run
+    /// # use lib_mal::{MALClient, MALError};
+    /// use lib_mal::model::options::Season;
+    /// # async fn test() -> Result<(), MALError> {
+    ///     # let client = MALClient::init("", false, None).await;
+    ///     let summer_2019 = client.get_seasonal_anime(Season::Summer, 2019, None).await?;
+    ///     # Ok(())
+    /// # }
+    ///```
     pub async fn get_seasonal_anime(
         &self,
         season: Season,
         year: u32,
-        limit: Option<u8>,
+        limit: impl Into<Option<u8>>,
     ) -> Result<AnimeList, MALError> {
         let url = format!(
             "https://api.myanimelist.net/v2/anime/season/{}/{}?limit={}",
             year,
             season,
-            limit.unwrap_or(100)
+            limit.into().unwrap_or(100)
         );
         let res = self.do_request(url).await?;
         self.parse_response(&res)
@@ -496,10 +508,20 @@ impl MALClient {
 
     ///Returns the suggested anime for the current user. Can return an empty list if the user has
     ///no suggestions.
-    pub async fn get_suggested_anime(&self, limit: Option<u8>) -> Result<AnimeList, MALError> {
+    ///
+    ///# Example
+    ///
+    ///```no_run
+    /// # use lib_mal::{MALClient, MALError};
+    /// # async fn test() -> Result<(), MALError> {
+    ///     # let client = MALClient::init("", false, None).await;
+    ///     let suggestions = client.get_suggested_anime(10).await?;
+    /// # }
+    ///```
+    pub async fn get_suggested_anime(&self, limit: impl Into<Option<u8>>) -> Result<AnimeList, MALError> {
         let url = format!(
             "https://api.myanimelist.net/v2/anime/suggestions?limit={}",
-            limit.unwrap_or(100)
+            limit.into().unwrap_or(100)
         );
         let res = self.do_request(url).await?;
         self.parse_response(&res)
@@ -573,12 +595,12 @@ impl MALClient {
     pub async fn get_forum_topic_detail(
         &self,
         topic_id: u32,
-        limit: Option<u8>,
+        limit: impl Into<Option<u8>>
     ) -> Result<TopicDetails, MALError> {
         let url = format!(
             "https://api.myanimelist.net/v2/forum/topic/{}?limit={}",
             topic_id,
-            limit.unwrap_or(100)
+            limit.into().unwrap_or(100)
         );
         let res = self.do_request(url).await?;
         self.parse_response(&res)
@@ -587,31 +609,31 @@ impl MALClient {
     ///Returns all topics for a given query
     pub async fn get_forum_topics(
         &self,
-        board_id: Option<u32>,
-        subboard_id: Option<u32>,
-        query: Option<String>,
-        topic_user_name: Option<String>,
-        user_name: Option<String>,
-        limit: Option<u32>,
+        board_id: impl Into<Option<u32>>,
+        subboard_id: impl Into<Option<u32>>,
+        query: impl Into<Option<String>>,
+        topic_user_name: impl Into<Option<String>>,
+        user_name: impl Into<Option<String>>,
+        limit: impl Into<Option<u32>>,
     ) -> Result<ForumTopics, MALError> {
         let params = {
             let mut tmp = vec![];
-            if let Some(bid) = board_id {
+            if let Some(bid) = board_id.into() {
                 tmp.push(format!("board_id={}", bid));
             }
-            if let Some(bid) = subboard_id {
+            if let Some(bid) = subboard_id.into(){
                 tmp.push(format!("subboard_id={}", bid));
             }
-            if let Some(bid) = query {
+            if let Some(bid) = query.into() {
                 tmp.push(format!("q={}", bid));
             }
-            if let Some(bid) = topic_user_name {
+            if let Some(bid) = topic_user_name.into(){
                 tmp.push(format!("topic_user_name={}", bid));
             }
-            if let Some(bid) = user_name {
+            if let Some(bid) = user_name.into()   {
                 tmp.push(format!("user_name={}", bid));
             }
-            tmp.push(format!("limit={}", limit.unwrap_or(100)));
+            tmp.push(format!("limit={}", limit.into().unwrap_or(100)));
             tmp.join(",")
         };
         let url = format!("https://api.myanimelist.net/v2/forum/topics?{}", params);
