@@ -585,7 +585,7 @@ impl MALClient {
     ///# Note
     /// The [API docs from MAL](https://myanimelist.net/apiconfig/references/api/v2#operation/anime_anime_id_my_list_status_delete) say this method should return 404 if the anime isn't in the user's
     /// list, but in my testing this wasn't true. Without that there's no way to tell if the item
-    /// was actually deleted or not
+    /// was actually deleted or not.
     ///
     ///# Example
     ///

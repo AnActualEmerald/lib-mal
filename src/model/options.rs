@@ -89,9 +89,8 @@ pub struct StatusUpdate {
     comments: Option<String>,
 }
 
-// This is long and ugly but I don't know how else to do it
-impl StatusUpdate {
-    pub fn default() -> Self {
+impl Default for StatusUpdate {
+    fn default() -> Self {
         StatusUpdate {
             status: None,
             is_rewatching: None,
@@ -104,7 +103,9 @@ impl StatusUpdate {
             comments: None,
         }
     }
+}
 
+impl StatusUpdate {
     pub fn new() -> Self {
         Self::default()
     }
@@ -185,6 +186,12 @@ pub struct StatusBuilder {
     rewatch_value: Option<u8>,
     tags: Option<Vec<String>>,
     comments: Option<String>,
+}
+
+impl Default for StatusBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl StatusBuilder {
