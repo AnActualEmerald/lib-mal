@@ -5,6 +5,7 @@ use crate::model::options::{RankingType, Season};
 use crate::model::{AnimeDetails, AnimeList};
 use crate::MALClient;
 use tokio_test::block_on;
+
 #[test]
 fn anime_list() {
     let client = setup();

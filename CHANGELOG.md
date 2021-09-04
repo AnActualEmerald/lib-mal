@@ -7,14 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [v0.5.0]
+
 ### Added
 
 - Examples for API functions
 - `StatusBuilder` to make constructing `StatusUpdate`s easier
+- `ClientBuilder` to provide better error handling when creating a `MALClient`
 
 ### Changed
 
 - All functions that take `Option`s now take `impl Into<Option>`
+
+### Removed
+
+- `MALClient::init` this function is replaced by `ClientBuilder::build_with_refresh`
 
 
 
