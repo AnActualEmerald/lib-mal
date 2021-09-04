@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+
 ## [v0.5.0]
 
 ### Added
@@ -23,8 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - `MALClient::init` this function is replaced by `ClientBuilder::build_with_refresh`
-
-
 
 ## [v0.4.0]
 

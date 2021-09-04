@@ -32,6 +32,7 @@ mod builder;
 mod client;
 pub mod model;
 
+
 pub use builder::ClientBuilder;
 pub use client::MALClient;
 
@@ -57,6 +58,7 @@ impl Display for MALError {
     }
 }
 
+
 impl MALError {
     pub fn new(msg: &str, error: &str, info: impl Into<Option<String>>) -> Self {
         MALError {
@@ -65,4 +67,5 @@ impl MALError {
             info: info.into(),
         }
     }
+
 }

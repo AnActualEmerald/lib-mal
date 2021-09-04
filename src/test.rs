@@ -30,6 +30,29 @@ fn anime_details() {
 }
 
 #[test]
+fn anime_list() {
+    let client = setup();
+    let expected =
+        serde_json::from_str::<AnimeList>(include_str!("test-data/anime_list.json")).unwrap();
+    let result = block_on(client.get_anime_list("one", Some(4))).expect("Error performing request");
+    let first = expected.data[0].node.id;
+    let res_first = result.data[0].node.id;
+    assert_eq!(first, res_first); //Really don't want to implement partial_eq for all these structs lol
+}
+
+#[test]
+fn anime_details() {
+    let client = setup();
+    let expected =
+        serde_json::from_str::<AnimeDetails>(include_str!("test-data/anime_details.json")).unwrap();
+    let result = block_on(client.get_anime_details(30230, AnimeFields::ALL))
+        .expect("Error performing request");
+    let left = expected.show.title;
+    let right = result.show.title;
+    assert_eq!(left, right);
+}
+
+#[test]
 fn anime_ranking() {
     let client = setup();
     let expected =
